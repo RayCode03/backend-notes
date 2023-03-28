@@ -1,6 +1,10 @@
 const express = require("express");
 const app = express();
+require("./mongo");
 const cors = require("cors");
+
+const Note = require("./models/Notes.js");
+
 app.use(express.json());
 
 const logger = require("./middleware/logger");
@@ -50,7 +54,9 @@ app.get("/", (request, response) => {
 });
 
 app.get("/api/notes", (request, response) => {
-  response.json(notas);
+  Note.find({}).then((note) => {
+    response.json(note);
+  });
 });
 
 app.get("/api/notes/:id", (request, response) => {
@@ -75,32 +81,22 @@ app.delete("/api/notes/:id", (request, response) => {
 
 app.post("/api/notes", (request, response) => {
   const note = request.body;
-
   if (!note || !note.content) {
     return response.status(400).json({
       error: "note.content is missing",
     });
   }
 
-  // aplicar lógica para generar un id
-
-  const ids = notas.map((note) => note.id);
-
-  const maxId = Math.max(...ids);
-
-  const newNote = {
-    id: maxId + 1,
-
+  const newNote = new Note({
     content: note.content,
+    date: new Date(),
+    import: note.important || false,
+  });
 
-    important: typeof note.important !== "undefined" ? note.important : false,
+  newNote.save().then((saveNote) => {
+    response.json(saveNote);
+  });
 
-    date: new Date().toISOString(),
-  };
-
-  notas = notas.concat(newNote);
-
-  response.status(201).json(newNote);
 });
 
 app.use((request, response) => {
@@ -109,8 +105,7 @@ app.use((request, response) => {
   });
 });
 
-
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 app.listen(3000, () => {
   console.log(`Server running on port ${PORT}`);
