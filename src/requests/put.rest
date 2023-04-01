@@ -1,0 +1,7 @@
+PUT http://localhost:5000/api/notes/6427a9fb2e693b599a2e8167
+Content-Type: application/json
+
+{
+    "content": "Raymond es el mejor profesor de la historia",
+    "important": true
+}

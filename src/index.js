@@ -8,46 +8,11 @@ const Note = require("./models/Notes.js");
 app.use(express.json());
 
 const logger = require("./middleware/logger");
+const handleErrors = require("./middleware/handleErrors")
+const notFound = require("./middleware/NotFound")
 
 app.use(logger);
-
 app.use(cors());
-
-let notas = [
-  {
-    id: 1,
-    content: "This is a note",
-    date: "2019-05-30T17:30:31.098Z",
-    important: true,
-  },
-
-  {
-    id: 2,
-    content: "This is another note",
-    date: "2019-05-30T18:39:34.091Z",
-    important: false,
-  },
-
-  {
-    id: 3,
-
-    content: "This is the last note",
-
-    date: "2019-05-30T19:20:14.298Z",
-
-    important: true,
-  },
-
-  {
-    id: 4,
-
-    content: "Raymond is the best",
-
-    date: "2022-05-30T19:20:14.ADD",
-
-    important: true,
-  },
-];
 
 app.get("/", (request, response) => {
   response.send("<h1>Hello World!</h1>");
@@ -60,23 +25,32 @@ app.get("/api/notes", (request, response) => {
 });
 
 app.get("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
+  const { id } = request.params;
 
-  const note = notas.find((note) => note.id === id);
-
-  if (note) {
-    response.json(note);
-  } else {
-    response.status(404).end();
-  }
+  Note.findById(id)
+    .then((note) => {
+      if (note) {
+        return response.json(note);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((e) => {
+      console.log(e);
+      response.status(400).end();
+    });
 });
 
-app.delete("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
+app.delete("/api/notes/:id", (request, response, next) => {
+  const { id } = request.params;
 
-  notas = notas.filter((note) => note.id !== id);
-
-  response.status(204).end();
+  Note.findByIdAndDelete(id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((e) => {
+      next(e);
+    });
 });
 
 app.post("/api/notes", (request, response) => {
@@ -96,17 +70,32 @@ app.post("/api/notes", (request, response) => {
   newNote.save().then((saveNote) => {
     response.json(saveNote);
   });
-
 });
 
-app.use((request, response) => {
-  response.status(404).json({
-    error: "Not found",
-  });
+app.put("/api/notes/:id", (request, response, next) => {
+  const { id } = request.params;
+  const note = request.body;
+
+  const newNote = {
+    content: note.content,
+    important: note.important,
+  };
+
+  Note.findByIdAndUpdate(id, newNote, { new: true })
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((e) => {
+      next(e);
+    });
 });
+
+app.use(handleErrors);
+
+app.use(notFound);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(3000, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

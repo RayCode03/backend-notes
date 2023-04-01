@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-
 const password = process.env.MONGO_PASSWORD;
 
 const connectionStrieng = `mongodb+srv://RayCode03:${password}@cluster0.udgg8dc.mongodb.net/AppNotes?retryWrites=true&w=majority`;
@@ -18,3 +17,6 @@ mongoose
     console.log("Error connecting to MongoDB:", error.message);
   });
 
+process.on("uncaughtException", () => {
+  mongoose.connection.disconnect();
+});
